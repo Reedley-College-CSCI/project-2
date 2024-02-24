@@ -1,0 +1,486 @@
+//Nathan Mosqueda
+// I implemented a struct Movie then changed the code accordingly to match the struct. Added a remove feature and a displayinRange feture.
+// I added a remove function based on the feedback. I intended to make the code into different files for better readability. I intend to fix the max review so
+// that it doesnt go past 25 words
+
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <limits>
+using namespace std;
+
+const int INITIAL_CAPACITY = 25;
+const int MAX_REVIEW_LENGTH = 25;
+
+// Struct Defintion for Movie
+struct Movie {
+    string name;
+    int rating;
+    double releaseYear;
+    string review;
+};
+
+// Class definition for movieList
+class movieList {
+public:
+    movieList() : capacity(INITIAL_CAPACITY), pos(0) {
+        movies = new Movie[capacity];
+        
+    }
+
+    ~movieList() {
+        delete[] movies;
+    }
+
+    void runMovieSystem();
+    void addMovie();
+    void removeMovie();
+    void modifyMovie();
+    void displayMovieList();
+    void displayMoviesInRange();
+    void searchMovie();
+    void bubbleSort();
+    void resizeArrays();
+
+private:
+    Movie* movies;
+    int capacity;
+    int pos;
+
+   
+};
+
+// Main Function
+int main() {
+    ifstream inFile; // input file to read values into array
+    inFile.open("movies.txt");
+
+    if (!inFile.is_open())
+        cout << "File: movies.txt is not found" << endl;
+
+    movieList movieListSystem;
+
+    // Run the movie system
+    movieListSystem.runMovieSystem();
+
+    inFile.close(); // Close input file
+
+    return 0;
+}
+
+// Member functions
+/********************************************
+* Function: runMovieSystem
+*
+* Description: The hub for all of the functions of the program
+*
+*********************************************/
+void movieList::runMovieSystem() {
+    int decision = 0;
+    pos = 0; // Initialize pos
+
+    do {
+        // Display Menu Options
+        cout << "Movie List" << endl;
+        cout << "Press [1] to add to the movie list" << endl;
+        cout << "Press [2] to remove a movie" << endl;
+        cout << "Press [3] to Modify from the movie list" << endl;
+        cout << "Press [4] to display the movie list" << endl;
+        cout << "Press [5] to display movies in a range of years" << endl;
+        cout << "Press [6] to search a movie" << endl;  
+        cout << "Press [7] to exit the program" << endl;
+
+        cin >> decision;
+        cin.ignore(); // Clear the input buffer
+
+        // Actions based on user input
+        if (decision == 1) {
+            addMovie();
+        }
+        else if (decision == 2) {
+            removeMovie();
+        }
+        else if (decision == 3) {
+            modifyMovie();
+        }
+        else if (decision == 4) {
+            bubbleSort();
+            displayMovieList();
+        }
+        else if (decision == 5) {
+            displayMoviesInRange();
+        }
+        else if (decision == 6) {
+            searchMovie();
+        }
+        else if (decision == 7) {
+            cout << "Exiting the program." << endl;
+        }
+        else {
+            cout << "Invalid choice. Please try again." << endl;
+        }
+    } while (decision != 7); // Continue the loop until the user chooses to exit
+}
+/********************************************
+* Function: addMovie
+*
+* Description: The function that takes care of adding a movie to the *list in movies.txt
+*
+*********************************************/
+void movieList::addMovie() {
+    ofstream outfile("movies.txt", ios::app);
+
+    if (pos == capacity) {
+        resizeArrays();
+    }
+
+    // Prompt and store the name of the movie
+    cout << "Enter name of movie: ";
+    getline(cin, movies[pos].name);
+    outfile << movies[pos].name << "|";
+
+    // Prompt and store the rating of the movie with validation
+    do {
+        cout << "Enter rating (1 - 5): ";
+        cin >> movies[pos].rating;
+
+        if (movies[pos].rating < 1 || movies[pos].rating > 5) {
+            cout << "Invalid rating. Please enter a rating between 1 and 5." << endl;
+        }
+    } while (movies[pos].rating < 1 || movies[pos].rating > 5);
+
+    outfile << movies[pos].rating << "|";
+
+    // Prompt and store the release year of the movie
+    cout << "Enter what year the movie released: ";
+    cin >> movies[pos].releaseYear;
+    outfile << movies[pos].releaseYear << "|";
+
+    // Prompt and store the review of the movie
+    cout << "Enter review for the movie (up to " << MAX_REVIEW_LENGTH << " characters): ";
+    cin.ignore();
+    getline(cin, movies[pos].review);
+
+    outfile << movies[pos].review << endl;
+
+    outfile.close();
+
+    pos++;
+
+}
+
+/********************************************
+* Function: removeMovie
+*
+* Description: the function that allows users to remove a movie
+*
+*********************************************/
+void movieList::removeMovie() {
+    string removeMovie;
+    ifstream inFile("movies.txt");
+
+    // Prompt for the name of the movie to remove
+    cout << "Enter the name of the movie you want to remove: ";
+    getline(cin, removeMovie);
+    // Convert to lowercase
+    for (char& c : removeMovie) {
+        c = tolower(c);
+    }
+    bool found = false;
+
+    // Read data from the file into arrays
+    pos = 0;
+    while (getline(inFile, movies[pos].name, '|')) {
+        inFile >> movies[pos].rating; // Read the rating
+        inFile.ignore(); // Consume the '|' character
+        inFile >> movies[pos].releaseYear; // Read the release year
+        inFile.ignore(); // Consume the '|' character
+        getline(inFile, movies[pos].review); // Read the review
+
+        for (char& c : movies[pos].name) {
+            c = tolower(c);
+        }
+
+        if (movies[pos].name == removeMovie) {
+            found = true;
+            // Shift all elements after the removal position to fill the gap
+            for (int i = pos; i < capacity - 1; i++) {
+                movies[i] = movies[i + 1];
+            }
+            pos--;
+        }
+        pos++;
+    }
+
+    inFile.close();
+
+    // Rewrite the entire file with the modified data
+    ofstream outfile("movies.txt");
+    for (int i = 0; i < pos; i++) {
+        outfile << movies[i].name << "|" << movies[i].rating << "|" << movies[i].releaseYear << "|" << movies[i].review << endl;
+    }
+    outfile.close();
+
+    if (found) {
+        cout << "Movie successfully removed from the inventory." << endl;
+    }
+    else {
+        cout << "Movie not found in the inventory." << endl;
+    }
+}
+
+
+/********************************************
+* Function: modifyMovie
+*
+* Description: the function that allows users to change their rating *release year or review of a movie
+*
+*********************************************/
+void movieList::modifyMovie() {
+    string modifyMovie;
+    ifstream inFile("movies.txt");
+
+    // Prompt for the name of the movie to modify
+    cout << "Enter the name of the movie you want to modify: ";
+    getline(cin, modifyMovie);
+    // Convert to lowercase
+    for (char& c : modifyMovie) {
+        c = tolower(c);
+    }
+    bool found = false;
+
+
+    // Read data from the file into arrays
+    pos = 0;
+    while (getline(inFile, movies[pos].name, '|')) {
+        inFile >> movies[pos].rating; // Read the rating
+        inFile.ignore(); // Consume the '|' character
+        inFile >> movies[pos].releaseYear; // Read the release year
+        inFile.ignore(); // Consume the '|' character
+        getline(inFile, movies[pos].review); // Read the review
+
+        for (char& c : movies[pos].name) {
+            c = tolower(c);
+        }
+        
+        if (movies[pos].name == modifyMovie) {
+            found = true;
+            
+            // Prompt and update the rating for the movie with validation
+            do {
+                cout << "Enter the new rating for the movie: ";
+                cin >> movies[pos].rating;
+
+                if (movies[pos].rating < 1 || movies[pos].rating > 5) {
+                    cout << "Invalid rating. Please enter a rating between 1 and 5." << endl;
+                }
+            } while (movies[pos].rating < 1 || movies[pos].rating > 5);
+
+            // Prompt and update the release year for the movie
+            cout << "Enter the new release year for the movie: ";
+            cin >> movies[pos].releaseYear;
+
+            // Prompt and update the review for the movie
+            cout << "Enter the new review for the movie (up to " << MAX_REVIEW_LENGTH << " characters): ";
+            cin.ignore(); // Clear the input buffer
+            getline(cin, movies[pos].review);
+        }
+        pos++;
+    }
+
+    inFile.close();
+
+    // Rewrite the entire file with the modified data
+    ofstream outfile("movies.txt");
+    for (int i = 0; i < pos; i++) {
+        outfile << movies[i].name << "|" << movies[i].rating << "|" << movies[i].releaseYear << "|" << movies[i].review << endl;
+    }
+    outfile.close();
+
+    if (!found) {
+        cout << "Movie not found in the inventory." << endl;
+    }
+}
+
+/********************************************
+* Function: displayMovieList
+*
+* Description: Displays the full list of movies in movies.txt to      *the user
+*
+*********************************************/
+void movieList::displayMovieList() {
+    // Open the file in read mode
+    ifstream inFile("movies.txt");
+
+    if (!inFile.is_open()) {
+        cout << "Error opening file." << endl;
+        return;
+    }
+
+    // Read the data from the file into the arrays
+    pos = 0;
+    while (getline(inFile, movies[pos].name, '|')) {
+        inFile >> movies[pos].rating; // Read the rating
+        inFile.ignore(); // Consume the '|' character
+        inFile >> movies[pos].releaseYear; // Read the release year
+        inFile.ignore(); // Consume the '|' character
+        getline(inFile, movies[pos].review); // Read the review
+        pos++;
+    }
+    // Close the file
+    inFile.close();
+
+    // Bubble sort the data
+    bubbleSort();
+
+    // Display information for each movie in the inventory
+    for (int i = 0; i < pos; i++) {
+        cout << "Movie: " << movies[i].name << endl;
+        cout << "Movie rating: " << movies[i].rating << endl;
+        cout << "Release year: " << movies[i].releaseYear << endl;
+        cout << "Review: " << movies[i].review << endl << endl;
+    }
+}
+
+/********************************************
+* Function: bubbleSort
+*
+* Description: the function that sorts the movie list in alphebetical *order through bubble sort
+*
+*********************************************/
+void movieList::bubbleSort() {
+    // Bubble sort the array of Movie objects based on movie names
+    for (int i = 0; i < pos - 1; i++) {
+        for (int j = 0; j < pos - i - 1; j++) {
+            // Compare movie names
+            if (movies[j].name > movies[j + 1].name) {
+                // Swap entire Movie objects
+                swap(movies[j], movies[j + 1]);
+            }
+        }
+    }
+}
+
+/********************************************
+* Function: displayMovieInRange
+*
+* Description: the function that allows users to add a range in movies they want to see
+*
+*********************************************/
+
+void movieList::displayMoviesInRange() {
+    int startYear, endYear;
+
+    cout << "Enter the start year of the range: ";
+    cin >> startYear;
+
+    cout << "Enter the end year of the range: ";
+    cin >> endYear;
+    cout << endl;
+
+    cout << "Movies Released in the Range " << startYear << " to " << endYear << ":" << endl;
+
+    bool found = false;
+
+    for (int i = 0; i < pos; i++) {
+        if (movies[i].releaseYear >= startYear && movies[i].releaseYear <= endYear) {
+            cout << "Name: " << movies[i].name << endl;
+            cout << "Rating: " << movies[i].rating << endl;
+            cout << "Release Year: " << movies[i].releaseYear << endl;
+            cout << "Review: " << movies[i].review << endl << endl;
+            found = true;
+        }
+    }
+
+    if (!found) {
+        cout << "No movies found in the specified range." << endl;
+    }
+}
+
+
+
+
+/********************************************
+* Function: searchMovie
+*
+* Description: function that allows the user to search for a specific movie in movies.txt
+*
+*********************************************/
+
+void movieList::searchMovie() {
+    string exactSearch;
+
+
+    cout << "Enter the name of the movie you want to search for: ";
+    getline(cin, exactSearch);
+    // Convert to lowercase
+    for (char& c : exactSearch) {
+        c = tolower(c);
+    }
+
+
+    ifstream inFile("movies.txt");
+    if (!inFile.is_open()) {
+        cout << "Error opening file." << endl;
+        return;
+    }
+
+    bool found = false;
+
+    pos = 0;
+    while (getline(inFile, movies[pos].name, '|')) {
+        inFile >> movies[pos].rating; // Read the rating
+        inFile.ignore(); // Consume the '|' character
+        inFile >> movies[pos].releaseYear; // Read the release year
+        inFile.ignore(); // Consume the '|' character
+        getline(inFile, movies[pos].review); // Read the review
+
+        for (char& c : movies[pos].name) {
+            c = tolower(c);
+        }
+
+        if (movies[pos].name == exactSearch) {
+            found = true;
+            movies[pos].name[0] = toupper(movies[pos].name[0]);
+
+            cout << "Movie: " << movies[pos].name << endl;
+            cout << "Movie rating: " << movies[pos].rating << endl;
+            cout << "Release year: " << movies[pos].releaseYear << endl;
+            cout << "Review: " << movies[pos].review << endl << endl;
+        }
+        pos++;
+    }
+
+    inFile.close();
+
+    if (!found) {
+        cout << "Movie not found in the inventory." << endl;
+    }
+}
+
+/********************************************
+* Function: resizeArrays
+*
+* Description: function that resizes the various arrays in the program when needed
+*
+*********************************************/
+void movieList::resizeArrays() {
+    int newCapacity = capacity * 2;
+
+    Movie* newMovies = new Movie[capacity];
+
+    // Copy existing data to new array
+    for (int i = 0; i < capacity; i++) {
+        newMovies[i] = movies[i];
+    }
+
+    delete[] movies;
+
+    // Update pointers to the new arrays
+    movies = newMovies;
+
+    // Update capacity
+    capacity = newCapacity;
+
+    cout << "Array resized. New capacity: " << capacity << endl;
+}
